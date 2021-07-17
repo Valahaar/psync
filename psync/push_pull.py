@@ -65,11 +65,12 @@ class PushPullCommand(PsyncBaseCommand):
             default=None,
             help="SSH port to use (not needed in case of a host configured via ssh config)",
         )
+
         parser.add_argument(
             "-c",
             "--compress",
             action="store_true",
-            help=f'Activate rsync compression (defaults to ${CONSTS["compress"]})',
+            help=f'Activates rsync compression (defaults to ${CONSTS["compress"]})',
         )
 
         parser.add_argument(
@@ -82,16 +83,15 @@ class PushPullCommand(PsyncBaseCommand):
         parser.add_argument(
             "--debug",
             action="store_true",
-            help=f'Prints the parsed arguments, some useful information and asks for confirmation before running the command (enabled if ${CONSTS["debug"]}) is set)',
+            help=f"Prints the parsed arguments, some useful information and asks for confirmation before running the "
+            f'command (enabled if ${CONSTS["debug"]}) is set)',
         )
 
         return parser
 
     def run(self, config):
         mode = self.name
-
-        if config.debug:
-            print(config)
+        cwd = Path.cwd()
 
         compress_flag = "z" if config.compress else ""
         exclusions = ""
@@ -101,6 +101,17 @@ class PushPullCommand(PsyncBaseCommand):
 
         for exclusion in exclusions_list:
             exclusions += f'--exclude "{exclusion}" '
+
+        destination = config.destination
+
+        # destination might actually be a file...
+        # if that's the case, set it to None and prepend the file to the list of files
+        if (cwd / destination).exists():
+            config.destination = None
+            config.files.insert(0, destination)
+
+        if config.debug:
+            print(config)
 
         dest = (
             pconf.remotes[config.destination]
@@ -122,7 +133,6 @@ class PushPullCommand(PsyncBaseCommand):
             print(f"You must specify --local or set ${CONSTS['local']}")
             exit(1)
 
-        cwd = Path().absolute()
         local = Path(local).expanduser().absolute()
         remote = Path(remote).expanduser().absolute()
 
