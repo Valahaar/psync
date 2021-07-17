@@ -106,7 +106,7 @@ class PushPullCommand(PsyncBaseCommand):
 
         # destination might actually be a file...
         # if that's the case, set it to None and prepend the file to the list of files
-        if (cwd / destination).exists():
+        if destination is not None and (cwd / destination).exists():
             config.destination = None
             config.files.insert(0, destination)
 
@@ -114,9 +114,9 @@ class PushPullCommand(PsyncBaseCommand):
             print(config)
 
         dest = (
-            pconf.remotes[config.destination]
+            pconf.replicas[config.destination]
             if config.destination is not None
-            else pconf.default_remote
+            else pconf.default_replica
         )
         hostdata = dest.hostdata.filled
         port = config.port or hostdata.port

@@ -5,27 +5,35 @@ What is `psync`? A simple tool to quickly synchronize your project(s) across one
 ## Installation
 `pip install git+https://github.com/Valahaar/psync.git` (pypi package coming soon :-) ) 
 
+## Usage
+Run `psync init` from the root directory of your project (use `-h` or `--help` if you don't know how it works!).
+
 ## Example config
 ```yml
-project: ~/projects/psync  # local project path
-default: remote2           # default remote name (optional; in case there is only one remote, that is selected as default)
-
-remotes:
-  remote1:
-    path: /path/to/project
-    host:
-      host: host_in_ssh_config
-  remote2:
-    path: ~/my-projects/psync
-    host:
-      hostname: 192.168.1.223
-      port: 10333
-      user: root
-
 general:
+  local: replica1     # local project path (required!)
+  default: replica2   # default remote name (optional; in case there is only one remote, that is selected as default)
+
   compress: true      # whether to use -c flag in rsync (enables compression)
   ask_confirm: false  # whether to show the rsync command and ask permission before execution
   debug: false        # prints the parsed arguments to the command plus path info (also enables ask_confirm)
+
+replicas:
+  replica1:
+    path: /path/to/project
+    host:
+      host: host_in_ssh_config  # you can specify a host in SSH config
+  replica2:
+    path: ~/my-projects/psync
+    host:
+      hostname: 192.168.1.223  # or you can configure it yourself
+      port: 10333
+      user: root
+  replica3:
+    path: /another/path/to/project
+    host:
+      host: host_in_ssh_config  # or you can combine the two things!
+      port: 12345
 ```
 
 ## Usage
@@ -65,8 +73,10 @@ A: git is **great** for all intents and purposes, and should be your go-to tool 
 Nevertheless, git does not deal well with large files (e.g., datasets) and requires pushing / pulling to the repository.
 `psync` is only intended to be used when moving code **and** data around, and it makes for a great addition for those who use git with 2FA (as it disables HTTPS access).
 
+Besides, don't forget to push your `.psync.yml` file to git! This way, replica info will always be up-to-date :) 
+
 Q: `psync` keeps asking for my password!
-A: Please see Configuring remotes [TODO: link]
+A: Please see *Configuring remotes* below. 
 
 ## Configuring remotes
 It is highly recommended configuring SSH remotes when using `psync`. For example, our `host_in_ssh_config` could be

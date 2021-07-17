@@ -1,1 +1,3 @@
-from psync.config import config
+from psync.config import get_config
+
+config = get_config()

@@ -9,7 +9,7 @@ from psync.host_data import HostData
 
 
 @dataclass
-class PsyncRemoteConfig:
+class PsyncReplicaConfig:
     alias: str
     path: str
     host: HostData
@@ -27,19 +27,17 @@ class PsyncRemoteConfig:
 
 @dataclass
 class PsyncGeneralConfig:
+    local: str = SI("${oc.env:PSYNC_LOCAL}")
+    remote: Optional[str] = SI("${oc.env:PSYNC_LOCAL,null}")
     ask_confirm: bool = SI("${oc.decode:${oc.env:PSYNC_ASK_CONFIRM,false}}")
-    local_host: Optional[str] = SI("${oc.env:PSYNC_LOCAL_HOST,${oc.env:HOSTNAME,null}}")
     compress: bool = SI("${oc.decode:${oc.env:PSYNC_COMPRESS,false}}")
     debug: bool = SI("${oc.decode:${oc.env:PSYNC_DEBUG,false}}")
 
 
 @dataclass
 class PsyncConfigOC:
-    remotes: Dict[str, PsyncRemoteConfig]
+    replicas: Dict[str, PsyncReplicaConfig]
     general: PsyncGeneralConfig = PsyncGeneralConfig()
-
-    project: str = SI("${oc.env:PSYNC_LOCAL_PROJECT,null}")
-    default: Optional[str] = SI("${oc.env:PSYNC_DEFAULT_REMOTE,null}")
 
 
 class PsyncConfig:
@@ -52,41 +50,57 @@ class PsyncConfig:
         return OmegaConf.to_object(self.__config.general)
 
     @property
-    def remotes_real(self):
-        return self.__config.remotes
+    def replicas_real(self):
+        return self.__config.replicas
 
     @property
-    def remotes(self) -> Dict[str, PsyncRemoteConfig]:
+    def replicas(self) -> Dict[str, PsyncReplicaConfig]:
         result = {}
-        for alias, remote in self.__config.remotes.items():
-            remote.alias = alias
-            result[alias] = OmegaConf.to_object(remote)
+        for alias, replica in self.__config.replicas.items():
+            replica.alias = alias
+            result[alias] = OmegaConf.to_object(replica)
         return result
 
     @property
+    def local(self) -> PsyncReplicaConfig:
+        return self.replicas[self.__config.general.local]
+
+    @property
     def project(self) -> str:
-        return self.__config.project
+        return self.local.path
 
     @property
     def default(self) -> str:
-        return self.__config.default
+        return self.__config.general.remote
 
     @property
-    def default_remote(self) -> PsyncRemoteConfig:
+    def default_replica(self) -> PsyncReplicaConfig:
         if self.default is not None:
-            return self.remotes[self.default]
+            return self.replicas[self.default]
 
-        n = len(self.remotes)
+        replicas = list(self.replicas.values())
+        n = len(replicas)
         if n == 1:
-            return next(iter(self.remotes.values()))
+            print(
+                f"There is only one replica ({replicas[0]}), which should be the local replica."
+            )
+            exit()
+
+        if n == 2:
+            return next(
+                filter(
+                    lambda replica: replica.alias != self.general.local,
+                    self.replicas.values(),
+                )
+            )
 
         raise ValueError(
-            f"Cannot choose a default remote. Default is not set and {n} aliases have been provided."
+            f"Cannot choose a default replica. Default is not set and {n} replicas have been provided."
         )
 
     @property
     def aliases(self):
-        return list(self.remotes.keys())
+        return list(self.replicas.keys())
 
     def as_yaml(self):
         return OmegaConf.to_yaml(self.__config, resolve=True)
@@ -100,11 +114,13 @@ class PsyncConfig:
             backup_path = self.path.rename(self.path.parent / (self.path.name + ".bak"))
             print(f"Config backed up at {backup_path}")
 
-        with self.path.open("w") as f:
-            print(self.as_yaml(), file=f)
+        for replica in self.replicas_real.values():
+            replica.alias = None
+
+        OmegaConf.save(self.__config, self.path, resolve=True)
 
 
-def try_find_config_file() -> Optional[Path]:
+def try_find_config_file(search_home: bool = True) -> Optional[Path]:
     psync_conf_filename = ".psync.yml"
 
     proj_path = os.environ.get("PSYNC_LOCAL_PROJECT", None)
@@ -112,31 +128,46 @@ def try_find_config_file() -> Optional[Path]:
         config_path = Path(proj_path) / psync_conf_filename
         if config_path.exists():
             return config_path
-        raise NotImplemented
+        return None
 
     curdir = Path.cwd()
-    while curdir.parent != curdir:  # exits upon reaching /
+    while (
+        curdir.parent != curdir
+    ):  # exits upon reaching / (root folder; because the parent of / is /)
         conf_file = curdir / psync_conf_filename
         if conf_file.exists():
             return conf_file
         curdir = curdir.parent
 
-    home_config = Path("~/.config") / psync_conf_filename
+    if search_home:
+        home_config = Path("~/.config") / psync_conf_filename
 
-    if home_config.exists():
-        return home_config
+        if home_config.exists():
+            return home_config
 
-    raise NotImplemented
+    return None
 
 
-def _get_config() -> PsyncConfig:
+class ConfigNotFoundException(BaseException):
+    pass
+
+
+class NullPsyncConfig(PsyncConfig):
+    def __init__(self):
+        super().__init__(None, None)
+
+    def __getattr__(self, item):
+        raise ConfigNotFoundException()
+
+
+def get_config() -> PsyncConfig:
     config_path = try_find_config_file()
+
+    if config_path is None:
+        return NullPsyncConfig()
 
     _conf = OmegaConf.load(config_path)
     schema = OmegaConf.structured(PsyncConfigOC)
     oc = OmegaConf.merge(schema, _conf)
     OmegaConf.resolve(oc)
     return PsyncConfig(oc, config_path)
-
-
-config = _get_config()
