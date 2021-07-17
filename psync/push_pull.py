@@ -156,24 +156,37 @@ class PushPullCommand(PsyncBaseCommand):
         else:
             src, tgt = remote_path, local_path
 
+        pre_cmd = (
+            f"rsync {custom_ssh}-avh{compress_flag}P --info=progress2 {exclusions}"
+        )
+        commands = []
+
         if len(config.files) > 0:
             src = " ".join(map(lambda f: f"{src}{f}", config.files))
+            tgt = " ".join(map(lambda f: f"{tgt}{f}", config.files))
 
-        cmd = f"rsync {custom_ssh}-avh{compress_flag}P --info=progress2 {exclusions}{src} {tgt}"
+            for file in config.files:
+                file_sync_command = f"{pre_cmd}{src}{file} {tgt}{file}"
+                commands.append(file_sync_command)
+        else:
+            commands.append(f"{pre_cmd}{src} {tgt}")
 
         if config.confirm or pconf.general.ask_confirm or config.debug:
 
-            print(cmd)
+            print("Command(s) to be executed:")
+            for command in commands:
+                print("  ", command)
 
             choice = input("Execute? [y/n]\n>>> ")
             if choice != "y":
                 print("Exiting.")
                 exit(0)
 
-        if config.debug:
-            print("Executing the command")
+        for cmd in commands:
+            if config.debug:
+                print("Executing", cmd)
 
-        run_command(cmd, get_result=False)
+            run_command(cmd, get_result=False)
 
 
 class PushCommand(PushPullCommand):
