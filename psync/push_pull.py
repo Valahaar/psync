@@ -162,9 +162,6 @@ class PushPullCommand(PsyncBaseCommand):
         commands = []
 
         if len(config.files) > 0:
-            src = " ".join(map(lambda f: f"{src}{f}", config.files))
-            tgt = " ".join(map(lambda f: f"{tgt}{f}", config.files))
-
             for file in config.files:
                 file_sync_command = f"{pre_cmd}{src}{file} {tgt}{file}"
                 commands.append(file_sync_command)
