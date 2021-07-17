@@ -14,9 +14,9 @@ setup(
     keywords="psync project synchronization sharing",
     url="https://github.com/Valahaar/psync",
     author="Niccolò Campolungo",
-    author_email="campolungo@di.uniroma1.it",
+    author_email="niccolo.campolungo@gmail.com",
     license="Apache",
-    packages=find_packages(where='.'),
+    packages=find_packages(where="."),
     install_requires=[
         "jsonargparse==3.16.0",
         "omegaconf==2.1.0",
