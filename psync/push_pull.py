@@ -153,13 +153,11 @@ class PushPullCommand(PsyncBaseCommand):
 
         if mode == "push":
             src, tgt = local_path, remote_path
-
-            if len(config.files) > 0:
-                src = " ".join(map(lambda f: f"{src}{f}", config.files))
         else:
             src, tgt = remote_path, local_path
-            if len(config.files) > 0:
-                tgt = " ".join(map(lambda f: f"{tgt}{f}", config.files))
+
+        if len(config.files) > 0:
+            src = " ".join(map(lambda f: f"{src}{f}", config.files))
 
         cmd = f"rsync {custom_ssh}-avh{compress_flag}P --info=progress2 {exclusions}{src} {tgt}"
 
