@@ -30,6 +30,7 @@ class PsyncGeneralConfig:
     ask_confirm: bool = SI("${oc.decode:${oc.env:PSYNC_ASK_CONFIRM,false}}")
     local_host: Optional[str] = SI("${oc.env:PSYNC_LOCAL_HOST,${oc.env:HOSTNAME,null}}")
     compress: bool = SI("${oc.decode:${oc.env:PSYNC_COMPRESS,false}}")
+    debug: bool = SI("${oc.decode:${oc.env:PSYNC_DEBUG,false}}")
 
 
 @dataclass

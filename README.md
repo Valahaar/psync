@@ -4,8 +4,8 @@ What is `psync`? A simple tool to quickly synchronize your project across one or
 
 ## Example config
 ```yml
-project: ~/projects/psync
-default: remote2
+project: ~/projects/psync  # local project path
+default: remote2           # default remote name (optional; in case there is only one remote, that is selected as default)
 
 remotes:
   remote1:
@@ -20,6 +20,7 @@ remotes:
       user: root
 
 general:
-  ask_confirm: false
-  compress: true
+  compress: true      # whether to use -c flag in rsync (enables compression)
+  ask_confirm: false  # whether to show the rsync command and ask permission before execution
+  debug: false        # prints the parsed arguments to the command plus path info (also enables ask_confirm)
 ```
