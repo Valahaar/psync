@@ -71,12 +71,12 @@ class PsyncConfig:
 
     @property
     def default(self) -> str:
-        return self.__config.general.remote
+        return self.default_replica.alias
 
     @property
     def default_replica(self) -> PsyncReplicaConfig:
-        if self.default is not None:
-            return self.replicas[self.default]
+        if self.__config.general.remote is not None:
+            return self.replicas[self.__config.general.remote]
 
         replicas = list(self.replicas.values())
         n = len(replicas)
@@ -154,7 +154,7 @@ class ConfigNotFoundException(BaseException):
 
 class NullPsyncConfig(PsyncConfig):
     def __init__(self):
-        super().__init__(None, None)
+        super().__init__(None, None)  # noqa
 
     def __getattr__(self, item):
         raise ConfigNotFoundException()
@@ -170,4 +170,4 @@ def get_config() -> PsyncConfig:
     schema = OmegaConf.structured(PsyncConfigOC)
     oc = OmegaConf.merge(schema, _conf)
     OmegaConf.resolve(oc)
-    return PsyncConfig(oc, config_path)
+    return PsyncConfig(oc, config_path)  # noqa

@@ -15,10 +15,16 @@ class ListReplica(PsyncSubcommand):
     name = "list"
 
     def run(self):
-        alias_name = pconf.default
-        for name, remote in pconf.replicas.items():
-            default_str = "*** " if alias_name == name else ""
-            print(f"{default_str}{name} -> {remote}")
+        default_remote = pconf.default
+        local = pconf.local.alias
+
+        for name, replica in pconf.replicas.items():
+            end = ""
+            if name == local:
+                end = "    LOCAL"
+            elif name == default_remote:
+                end = "    DEFAULT"
+            print(f"{name} -> {replica}{end}")
 
 
 class AddReplica(PsyncSubcommand):
@@ -130,6 +136,30 @@ class SetupReplica(PsyncSubcommand):
 
         run_command(f"ssh-copy-id {replica_host.ssh_connection}", get_result=False)
 
+
+# TODO: this requires pconf.general to actually be accessible (instead of returning a copy of the object)
+# I should find a better way to handle configuration
+# class DefaultReplica(PsyncSubcommand):
+#     name = "default"
+#
+#     def parser(self) -> Optional[ArgumentParser]:
+#         parser = ArgumentParser()
+#         parser.add_argument("alias")
+#         return parser
+#
+#     def run(self, alias):
+#         if alias not in pconf.replicas_real:
+#             aliases = ", ".join(pconf.replicas_real.keys())
+#             print(f"{alias} not among valid remotes: {aliases}")
+#             return
+#
+#         old_default = pconf.default
+#         pconf.general.local = alias
+#         new_default = pconf.default
+#         pconf.persist()
+#         print(
+#             f"Replica '{new_default}' set as new default (old: '{old_default.alias}')"
+#         )
 
 PsyncReplicasCommand = PsyncCommandWithSubcommands.create(
     "replicas", (ListReplica, AddReplica, DelReplica, SetupReplica)
