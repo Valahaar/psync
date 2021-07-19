@@ -103,4 +103,3 @@ All subsequent logins to `<remote>` from the host you executed `ssh-copy-id` wil
 - Support .gitignore
 - Support changing default exclusions
 - Support exclusions from config
-- Maybe `replicas` instead of `remotes` would make for a more flexible usage? (i.e., local copy is a replica as well, but we do not consider it as possible remote -- needs to be specified in the config though)
